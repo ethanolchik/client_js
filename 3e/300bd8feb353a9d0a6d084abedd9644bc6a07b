@@ -1,0 +1,73 @@
+CHANGELOG.md
+  s_b3619297ac754a::t_76b585d9024ae6 26-30
+README.md
+  s_b3619297ac754a::t_f02fe51c3f24fb 231-265,435-436,440,458-461,463-465
+docs/native-histograms.md
+  s_b3619297ac754a::t_ac85f34db2de42 1-188
+example/native-histogram.js
+  s_b3619297ac754a::t_e0413b6e863cdc 1-54
+index.d.ts
+  s_b3619297ac754a::t_e601bb7be0addc 31-33,35-40,46,51,54,56,88-89,91-93,126,129-131,136,139-140,143,149-151,162,164-165,176-180,205-209,211,213-216,219,221,231,235-241,244,246,267,275,277-280,283,285,306,343-372,392,413,632-648,704-708,761-764,767
+index.js
+  s_b3619297ac754a::t_3f4dabf948174f 36-37
+lib/cluster.js
+  s_b3619297ac754a::t_85f398290216ec 65,69,95,132-133,135,138
+lib/histogram.js
+  s_b3619297ac754a::t_366ce2ed128f56 30-33,37,43,77,113,132,139-144,158,184,258,266,273,276,280-286
+lib/metric.js
+  s_b3619297ac754a::t_c1658ebfef59c1 79
+lib/metricAggregators.js
+  s_b3619297ac754a::t_8c12874415b4ce 17-22,27,30,33-47,62,65-69,87-98,112-115,119-122
+lib/metrics.json
+  s_b3619297ac754a::t_35bad74d9aab03 1-344
+lib/metrics.proto
+  s_b3619297ac754a::t_8e4a5a02f78450 1-156
+lib/nativeHistogram.js
+  s_b3619297ac754a::t_5e42e4b642f487 1-360
+lib/nativeHistogramBounds.js
+  s_b3619297ac754a::t_f28b2b92ec33cd 1-100
+lib/protobuf.js
+  s_b3619297ac754a::t_99c7956f9921fa 1-203
+lib/pushgateway.js
+  s_b3619297ac754a::t_c885e4460e4fae 78-86
+lib/registry.js
+  s_b3619297ac754a::t_8b48e2949df294 29-32,39-40,67,73-83,94-95,107-117,151-152,154-156,160-163,205-213,253-254,257
+lib/worker.js
+  s_b3619297ac754a::t_75ecba63d40073 71,75,84-86,107,140-141,143,148
+package.json
+  s_b3619297ac754a::t_cecec32b58c391 22,57
+scripts/generate-protobuf.js
+  s_b3619297ac754a::t_6d7afcbc35d56b 1-28
+test/clusterTest.js
+  s_b3619297ac754a::t_faada9e43a6fc6 119-151
+test/exemplarsTest.js
+  s_b3619297ac754a::t_aad66d8c65321f 34-36
+test/helpers/nativeHistogram.js
+  s_b3619297ac754a::t_4ccc4160310395 1-61
+test/nativeHistogramAggregationTest.js
+  s_b3619297ac754a::t_955c7383cc60fb 1-215
+test/nativeHistogramTest.js
+  s_b3619297ac754a::t_f1d02b9c93dd79 1-439
+test/nativeHistogramTypes.ts
+  s_b3619297ac754a::t_fd77728bd48a30 1-142
+test/protobufTest.js
+  s_b3619297ac754a::t_b4f2a6e58de78e 1-520
+test/workerTest.js
+  s_b3619297ac754a::t_1af063b3b3aec9 123-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "3e300bd8feb353a9d0a6d084abedd9644bc6a07b",
+  "prompts": {},
+  "sessions": {
+    "s_b3619297ac754a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a08b72-0b4d-71b1-845a-546e7f92115d",
+        "model": "unknown"
+      },
+      "human_author": "Ethan Olchik <eolchik@cloudflare.com>"
+    }
+  }
+}
