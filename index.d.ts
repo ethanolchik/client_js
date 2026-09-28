@@ -81,7 +81,7 @@ export class Registry<
 	 * @param aggregator Filter by aggregator type
 	 */
 	getMetricsAsJSON(
-		aggregator: string,
+		aggregator: string | string[],
 	): Promise<MetricObjectWithValues<MetricValue<string>>[]>;
 
 	/**
@@ -99,7 +99,7 @@ export class Registry<
 	 * Get all metrics as objects
 	 * @param aggregator Filter by aggregator type
 	 */
-	getMetricsAsArray(aggregator: string): MetricObject[];
+	getMetricsAsArray(aggregator: string | string[]): MetricObject[];
 
 	/**
 	 * Remove a single metric
@@ -314,7 +314,15 @@ export type Metric<T extends string = NoLabelNameType> =
 /**
  * Aggregation methods, used for aggregating metrics in a Node.js cluster.
  */
-export type Aggregator = 'omit' | 'sum' | 'first' | 'min' | 'max' | 'average';
+export type Aggregator =
+	| 'omit'
+	| 'sum'
+	| 'first'
+	| 'min'
+	| 'max'
+	| 'average'
+	| 'sumNative'
+	| 'firstNative';
 
 /**
  * The metric type reported in metric objects, such as those returned by
@@ -336,6 +344,34 @@ export interface MetricObjectWithValues<
 	T extends MetricValue<string>,
 > extends MetricObject {
 	values: T[];
+	nativeHistograms?: NativeHistogramValue[];
+}
+
+export interface NativeHistogramSpan {
+	offset: number;
+	length: number;
+}
+
+export interface NativeHistogramExemplar {
+	labelSet: Record<string, string | number>;
+	value: number;
+	/** Unix timestamp in seconds. */
+	timestamp: number;
+}
+
+/** A snapshot of one label set's native histogram, suitable for JSON and IPC. */
+export interface NativeHistogramValue<T extends string = string> {
+	labels: LabelValues<T>;
+	count: number;
+	sum: number;
+	schema: number;
+	zeroThreshold: number;
+	zeroCount: number;
+	positiveSpans: NativeHistogramSpan[];
+	positiveDeltas: number[];
+	negativeSpans: NativeHistogramSpan[];
+	negativeDeltas: number[];
+	exemplars: NativeHistogramExemplar[];
 }
 
 export type MetricValue<T extends string> = {
@@ -376,7 +412,7 @@ export interface IncreaseDataWithExemplar<T extends string> {
 export interface ObserveDataWithExemplar<T extends string> {
 	value: number;
 	labels?: LabelValues<T>;
-	exemplarLabels?: LabelValues<T>;
+	exemplarLabels?: Record<string, string | number>;
 }
 
 /**
@@ -595,9 +631,23 @@ export namespace Gauge {
 	}
 }
 
-export interface HistogramConfiguration<
-	T extends string,
-> extends MetricConfiguration<T> {
+export interface NativeHistogramConfiguration {
+	/**
+	 * Enable native buckets with an upper bound on their growth factor.
+	 * Values &lt;= 1 disable native buckets (the default). A value of 1.1 is recommended.
+	 */
+	nativeHistogramBucketFactor?: number;
+	/** Absolute values &lt;= this threshold go into the zero bucket. Default: 2^-128. */
+	nativeHistogramZeroThreshold?: number;
+	/**
+	 * Limit populated positive and negative buckets per label set by reducing
+	 * resolution, down to schema -4. Default: 160. Zero disables the limit.
+	 */
+	nativeHistogramMaxBucketNumber?: number;
+}
+
+export interface HistogramConfiguration<T extends string>
+	extends MetricConfiguration<T>, NativeHistogramConfiguration {
 	buckets?: number[];
 	collect?: CollectFunction<Histogram<T>>;
 }
@@ -653,16 +703,25 @@ export class Histogram<T extends string = NoLabelNameType> {
 	 */
 	startTimer(
 		labels?: LabelValues<T>,
-		exemplarLabels?: LabelValues<T>,
-	): (labels?: LabelValues<T>, exemplarLabels?: LabelValues<T>) => number;
+		exemplarLabels?: Record<string, string | number>,
+	): (
+		labels?: LabelValues<T>,
+		exemplarLabels?: Record<string, string | number>,
+	) => number;
 
 	/**
-	 * Reset histogram values
+	 * Reset histogram values.
+	 * Do not reset an individual contributor to a live sum/sumNative aggregate.
+	 * Coordinate resets across all contributors, including retained worker data,
+	 * to avoid false counter-reset detection in Prometheus.
 	 */
 	reset(): void;
 
 	/**
-	 * Initialize the metrics for the given combination of labels to zero
+	 * Initialize the metrics for the given combination of labels to zero.
+	 * Overwrites any existing observations for those labels. Do not use this to
+	 * reset an individual contributor to a live sum/sumNative aggregate; coordinate
+	 * resets across all contributors, including retained worker data.
 	 */
 	zero(labels: LabelValues<T>): void;
 
@@ -707,10 +766,13 @@ export namespace Histogram {
 		 * @returns Function to invoke when timer should be stopped. The value it
 		 * returns is the timed duration.
 		 */
-		startTimer(): (labels?: LabelValues<T>) => void;
+		startTimer(): (
+			labels?: LabelValues<T>,
+			exemplarLabels?: Record<string, string | number>,
+		) => number;
 	}
 
-	interface Config {
+	interface Config extends NativeHistogramConfiguration {
 		/**
 		 * Buckets used in the histogram
 		 */

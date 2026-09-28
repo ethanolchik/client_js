@@ -117,16 +117,17 @@ describe.each([
 
 		it('keeps pending scrapes in their original content types', async () => {
 			const { Registry: LocalRegistry, Histogram } = require('../index');
-			const { decodeMetricFamilies } = require('./helpers/protobuf');
+			const { decodeMetricFamilies } = require('./helpers/nativeHistogram');
 			const local = new LocalRegistry();
 			let finishCollecting;
 			const collected = new Promise(resolve => {
 				finishCollecting = resolve;
 			});
 			new Histogram({
-				name: 'pending_histogram',
-				help: 'Pending histogram',
+				name: 'pending_native',
+				help: 'Pending native histogram',
 				registers: [local],
+				nativeHistogramBucketFactor: 1.1,
 				async collect() {
 					await collected;
 				},
@@ -139,7 +140,7 @@ describe.each([
 				const binary = registry.clusterMetrics();
 				finishCollecting();
 				const [textBody, binaryBody] = await Promise.all([text, binary]);
-				expect(textBody).toContain('pending_histogram_count 1');
+				expect(textBody).toContain('pending_native_count 1');
 				const [family] = decodeMetricFamilies(binaryBody);
 				expect(family.metric[0].histogram.sampleCount).toBe(1);
 			} finally {
@@ -539,8 +540,25 @@ describe.each([
 			const AggregatorRegistry = require('../lib/cluster');
 			const workerRegistry = new AggregatorRegistry(regType);
 
-			const { Gauge } = require('../index');
+			const { Gauge, Histogram } = require('../index');
 			const gauge = new Gauge({ name: 'primary_gauge_test', help: 'test' });
+			const native = new Histogram({
+				name: 'shutdown_native',
+				help: 'test',
+				nativeHistogramBucketFactor: 1.1,
+			});
+			native.observe(2);
+			for (const aggregator of ['firstNative', 'omit']) {
+				new Histogram({
+					name: `shutdown_${aggregator}`,
+					help: 'test',
+					nativeHistogramBucketFactor: 1.1,
+					aggregator,
+					collect() {
+						throw new Error('Shutdown must not collect non-sum metrics');
+					},
+				});
+			}
 
 			gauge.set(0.8675309);
 
@@ -570,7 +588,7 @@ describe.each([
 					CLUSTER_WORKER_SCRAPE_FAILURES,
 				);
 				await expect(metrics).resolves.toEqual([
-					[await histogram.get(), expected],
+					[await histogram.get(), expected, await native.get()],
 				]);
 			} finally {
 				jest.dontMock('cluster');
